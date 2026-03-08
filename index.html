@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>妇女节快乐</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: "Microsoft YaHei", sans-serif;
+            background: linear-gradient(120deg, #f6d365, #fda085);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 40px 20px;
+            text-align: center;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 400px;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .title {
+            font-size: 2.2rem;
+            color: #e84393;
+            margin-bottom: 20px;
+            animation: bounce 2s ease infinite;
+        }
+
+        .message {
+            font-size: 1.2rem;
+            color: #333;
+            line-height: 1.8;
+            margin-bottom: 30px;
+        }
+
+        .flower {
+            font-size: 3rem;
+            margin: 10px 0;
+            animation: rotate 5s linear infinite;
+        }
+
+        .btn {
+            background: #e84393;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn:hover {
+            background: #d63031;
+            transform: scale(1.05);
+        }
+
+        .custom-alert {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 25px 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            font-size: 1.1rem;
+            color: #e84393;
+            text-align: center;
+            z-index: 1000;
+            opacity: 0;
+            transition: all 0.3s ease;
+        }
+
+        @keyframes float {
+            0%,
+            100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes bounce {
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @media (max-width: 375px) {
+            .title {
+                font-size: 1.8rem;
+            }
+
+            .message {
+                font-size: 1rem;
+            }
+
+            .custom-alert {
+                font-size: 1rem;
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="flower">🌸</div>
+        <h1 class="title">妇女节快乐！</h1>
+        <!-- 替换核心提示语 -->
+        <p class="message">
+            叮～女神节限定好运已送达🎁<br>
+            愿你温柔有力量，清醒有光芒<br>
+            不被定义，无关年龄，只管盛放🥰
+        </p>
+        <!-- 替换按钮文案 -->
+        <button class="btn" onclick="showMoreLove()">解锁专属女神祝福</button>
+    </div>
+
+    <script>
+        function showMoreLove() {
+            // 替换为新颖、有代表性的妇女节祝福语
+            const messages = [
+                "愿你身披星光，心有繁花，永远优雅💖",
+                "不必生得惊艳，但要活得精彩🌟",
+                "女性的美好，从来不止一种模样✨",
+                "做自己的女王，无偏爱，无例外👑",
+                "温柔是你的底色，勇敢是你的锋芒⚡",
+                "年龄从来不是枷锁，热爱才是🌷",
+                "愿你眼里藏星光，笑里带坦荡😘",
+                "不被世俗定义，只做独一无二的自己💐",
+                "春风十里，不如闪闪发光的你🌟",
+                "以花为名，温柔铿锵，不负时光🌸"
+            ];
+            const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+            showCustomAlert(randomMsg);
+        }
+
+        function showCustomAlert(text) {
+            const oldAlert = document.querySelector('.custom-alert');
+            if (oldAlert) oldAlert.remove();
+
+            const alertBox = document.createElement('div');
+            alertBox.className = 'custom-alert';
+            alertBox.textContent = text;
+            document.body.appendChild(alertBox);
+
+            setTimeout(() => {
+                alertBox.style.opacity = 1;
+            }, 10);
+
+            setTimeout(() => {
+                alertBox.style.opacity = 0;
+                setTimeout(() => alertBox.remove(), 300);
+            }, 3000);
+        }
+
+        window.onload = function () {
+            const card = document.querySelector('.card');
+            card.style.opacity = 0;
+            card.style.transform = "translateY(50px)";
+            setTimeout(() => {
+                card.style.transition = "all 0.8s ease";
+                card.style.opacity = 1;
+                card.style.transform = "translateY(0)";
+            }, 300);
+        }
+    </script>
+</body>
+
+</html>
