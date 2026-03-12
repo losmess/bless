@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>植树节互动种树</title>
 <style>
   * {
@@ -10,6 +10,8 @@
     padding: 0;
     box-sizing: border-box;
     user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
   }
   body {
     background: linear-gradient(120deg, #87CEEB, #98FB98);
@@ -36,7 +38,6 @@
     border-top: 3px solid #5C3317;
   }
 
-  /* 种子放置虚线：仅显示一次，默认隐藏 */
   .seed-pit {
     position: absolute;
     bottom: 110px;
@@ -55,11 +56,10 @@
     opacity: 0.8;
   }
 
-  /* 水杯浇水位置虚线：拖动水杯时显示 */
   .water-pit {
     position: absolute;
     bottom: 200px;
-    left: calc(50% + 20px); /* 小树偏右位置 */
+    left: calc(50% + 20px);
     transform: translateX(-50%);
     width: 40px;
     height: 40px;
@@ -87,7 +87,6 @@
     transition: opacity 0.5s ease;
   }
 
-  /* 种子样式 */
   .seed {
     width: 18px;
     height: 14px;
@@ -108,7 +107,6 @@
     transition: all 0.5s ease-out;
   }
 
-  /* 水杯样式：倾倒动作 + 固定在小树旁 + 淡化隐藏 */
   .water-can {
     width: 38px;
     height: 52px;
@@ -118,25 +116,20 @@
     cursor: grab;
     z-index: 99;
     pointer-events: auto;
-    transform-origin: bottom left; /* 倾倒中心点 */
-    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    will-change: transform, left, top, opacity;
-    /* 淡化隐藏的过渡效果 */
+    transform-origin: bottom left;
     transition: opacity 1.5s ease-out, transform 0.3s ease, left 0.3s ease, top 0.3s ease;
+    will-change: transform, left, top, opacity;
   }
-  /* 浇水时水杯固定在小树旁 + 倾倒 */
   .water-can.tilt {
     transform: rotate(-30deg);
-    left: calc(50% + 20px) !important; /* 小树偏右20px */
-    top: 280px !important; /* 小树旁高度 */
+    left: calc(50% + 20px) !important;
+    top: 280px !important;
   }
-  /* 浇水后水杯停留在小树旁（非倾倒状态） */
   .water-can.stay {
     left: calc(50% + 20px) !important;
     top: 280px !important;
     transform: rotate(0deg);
   }
-  /* 大树长成后水杯淡化隐藏 */
   .water-can.fade-out {
     opacity: 0;
     pointer-events: none;
@@ -159,7 +152,6 @@
     border-radius: 0 10px 10px 0;
   }
 
-  /* 洒水动画 */
   .drop-zone {
     position: absolute;
     bottom: 110px;
@@ -192,7 +184,6 @@
     100% { height: 120px; opacity: 0; top: 180px; }
   }
 
-  /* 树木样式：更真实的形态变化 */
   .tree-box {
     position: absolute;
     bottom: 115px;
@@ -213,7 +204,6 @@
     transition: all 1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     will-change: opacity, transform, width, height;
   }
-  /* 小苗 */
   .stage1 { 
     width: 4px;
     height: 28px;
@@ -232,7 +222,6 @@
     border-radius: 60% 40% 50% 50%;
     box-shadow: 0 0 5px rgba(0,100,0,0.2);
   }
-  /* 小树 */
   .stage2 { 
     width: 8px;
     height: 70px;
@@ -263,7 +252,6 @@
     border-radius: 50%;
     transform: rotate(-30deg);
   }
-  /* 大树 */
   .stage3 { 
     width: 14px;
     height: 160px;
@@ -295,7 +283,6 @@
     transform: rotate(-40deg);
   }
   .stage3 span {
-    content: '';
     position: absolute;
     top: 60px;
     right: -20px;
@@ -311,7 +298,6 @@
     transform: scale(1); 
   }
 
-  /* 文字提示 */
   .tip {
     position: absolute;
     top: 24px;
@@ -374,87 +360,82 @@
   const stages = document.querySelectorAll('.tree-stage');
   const tips = document.querySelectorAll('.tip');
 
-  // 状态管理
-  let seedPlanted = false; // 种子是否已埋
-  let seedPitShowed = false; // 种子虚线是否已显示过（仅显示一次）
-  let level = 0; // 成长等级：0-无 1-小苗 2-小树 3-大树
-  let isDraggingSeed = false; 
-  let isDraggingCan = false; 
-  let isWatering = false; 
+  let seedPlanted = false;
+  let seedPitShowed = false;
+  let level = 0;
+  let isDraggingSeed = false;
+  let isDraggingCan = false;
+  let isWatering = false;
 
-  // 丝滑拖动通用函数
-  function dragMove(elem, isSeed) {
+  // 统一支持鼠标+触摸
+  function startDrag(elem, isSeed, e) {
+    e.preventDefault();
+    if (isSeed && seedPlanted) return;
+    if (!isSeed && (!seedPlanted || level >=3 || isWatering)) return;
+
     if (isSeed) {
       isDraggingSeed = true;
-      // 种子虚线仅显示一次
       if (!seedPitShowed) {
         seedPit.classList.add('show');
         seedPitShowed = true;
       }
     } else {
       isDraggingCan = true;
-      // 拖动水杯时显示浇水位置虚线
       waterPit.classList.add('show');
     }
-
     elem.style.cursor = 'grabbing';
 
-    let move = (e) => {
+    const move = (evt) => {
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
       const sceneRect = document.querySelector('.scene').getBoundingClientRect();
-      const x = Math.max(sceneRect.left + 10, Math.min(e.clientX - elem.offsetWidth/2, sceneRect.right - 10));
-      const y = Math.max(sceneRect.top + 10, Math.min(e.clientY - elem.offsetHeight/2, sceneRect.bottom - 130));
-      
-      elem.style.left = `${x - sceneRect.left}px`;
-      elem.style.top = `${y - sceneRect.top}px`;
+      const x = Math.max(sceneRect.left + 10, Math.min(clientX - elem.offsetWidth/2, sceneRect.right - 10));
+      const y = Math.max(sceneRect.top + 10, Math.min(clientY - elem.offsetHeight/2, sceneRect.bottom - 130));
+      elem.style.left = x - sceneRect.left + 'px';
+      elem.style.top = y - sceneRect.top + 'px';
     };
 
-    let up = () => {
-      if (isSeed) {
-        isDraggingSeed = false;
-      } else {
+    const end = () => {
+      if (isSeed) isDraggingSeed = false;
+      else {
         isDraggingCan = false;
-        // 停止拖动水杯时隐藏浇水虚线
         waterPit.classList.remove('show');
       }
-      
       elem.style.cursor = 'grab';
       document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', up);
+      document.removeEventListener('mouseup', end);
+      document.removeEventListener('touchmove', move);
+      document.removeEventListener('touchend', end);
       checkDropAction(isSeed);
     };
 
     document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', up);
+    document.addEventListener('mouseup', end);
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('touchend', end);
   }
 
-  // 拖动松开后的动作判断
   function checkDropAction(isSeed) {
     if (isSeed) {
-      // 种子拖入虚线区域逻辑
       if (!seedPlanted) {
         const seedRect = seed.getBoundingClientRect();
         const pitRect = seedPit.getBoundingClientRect();
-        const inPit = Math.abs(seedRect.left - pitRect.left) < 20
-                   && Math.abs(seedRect.top - pitRect.top) < 20;
-        
+        const inPit = Math.abs(seedRect.left - pitRect.left) < 25 && Math.abs(seedRect.top - pitRect.top) < 25;
         if (inPit) {
           seed.classList.add('planted');
-          seedPit.classList.remove('show'); // 种子到位后隐藏虚线
+          seedPit.classList.remove('show');
           pitMark.style.opacity = 1;
           seedPlanted = true;
-          level = 1; // 直接长出小苗
+          level = 1;
           growTree(level);
           showTip(1);
         }
       }
     } else {
-      // 水杯拖入浇水虚线区域逻辑
-      if (seedPlanted && level < 3 && !isWatering) {
+      if (seedPlanted && level <3 && !isWatering) {
         const canRect = waterCan.getBoundingClientRect();
-        const waterPitRect = waterPit.getBoundingClientRect();
-        const inWater = Math.abs(canRect.left - waterPitRect.left) < 30
-                     && Math.abs(canRect.top - waterPitRect.top) < 30;
-        
+        const wpRect = waterPit.getBoundingClientRect();
+        const inWater = Math.abs(canRect.left - wpRect.left) < 35 && Math.abs(canRect.top - wpRect.top) < 35;
         if (inWater) {
           isWatering = true;
           doWater();
@@ -463,81 +444,49 @@
     }
   }
 
-  // 浇水动画 + 成长逻辑
   function doWater() {
-    // 1. 水杯倾倒动画
     waterCan.classList.add('tilt');
-    waterCan.classList.remove('stay');
-    waterCan.classList.remove('fade-out'); // 确保浇水时水杯显示
-    
-    // 2. 多水滴洒水动画
-    waterDrops.forEach((drop, index) => {
-      setTimeout(() => {
-        drop.classList.remove('water-animate');
-        void drop.offsetWidth;
-        drop.classList.add('water-animate');
-      }, index * 80);
+    waterCan.classList.remove('stay','fade-out');
+    waterDrops.forEach((d,i)=>{
+      setTimeout(()=>{
+        d.classList.remove('water-animate'); void d.offsetWidth;
+        d.classList.add('water-animate');
+      },i*80);
     });
-
-    // 3. 树木成长
-    setTimeout(() => {
+    setTimeout(()=>{
       level++;
       growTree(level);
-      showTip(level > 3 ? 3 : level);
-
-      // 4. 浇水完成后处理
-      setTimeout(() => {
+      showTip(level>3?3:level);
+      setTimeout(()=>{
         waterCan.classList.remove('tilt');
-        
-        // 如果还没长成大树，水杯停留在小树旁
-        if (level < 3) {
-          waterCan.classList.add('stay');
-        } 
-        // 大树长成后，水杯缓慢淡化隐藏
+        if(level<3) waterCan.classList.add('stay');
         else {
           waterCan.classList.add('fade-out');
-          waterPit.classList.remove('show'); // 隐藏浇水虚线
+          waterPit.classList.remove('show');
         }
-        
         isWatering = false;
-      }, 1200);
-    }, 500);
+      },1200);
+    },500);
   }
 
-  // 树木成长：每次仅显示当前阶段
   function growTree(lv) {
-    stages.forEach(s => s.classList.remove('show'));
-    if (lv >= 1 && lv <= 3) {
-      stages[lv-1].classList.add('show');
-    }
+    stages.forEach(s=>s.classList.remove('show'));
+    if(lv>=1&&lv<=3) stages[lv-1].classList.add('show');
   }
 
-  // 提示文字切换
   function showTip(step) {
-    tips.forEach(t => t.classList.remove('on'));
-    if (step <= 3) {
-      tips[step].classList.add('on');
-    }
+    tips.forEach(t=>t.classList.remove('on'));
+    if(step<=3) tips[step].classList.add('on');
   }
 
-  // 事件绑定
-  seed.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    if (!seedPlanted) {
-      dragMove(seed, true);
-    }
-  });
+  // 绑定鼠标+触摸事件
+  seed.addEventListener('mousedown',(e)=>startDrag(seed,true,e));
+  seed.addEventListener('touchstart',(e)=>startDrag(seed,true,e),{passive:false});
+  waterCan.addEventListener('mousedown',(e)=>startDrag(waterCan,false,e));
+  waterCan.addEventListener('touchstart',(e)=>startDrag(waterCan,false,e),{passive:false});
 
-  waterCan.addEventListener('mousedown', (e) => {
-    e.preventDefault();
-    if (seedPlanted && level < 3 && !isWatering) {
-      dragMove(waterCan, false);
-    }
-  });
-
-  // 防止点击误操作
-  seed.addEventListener('click', (e) => e.preventDefault());
-  waterCan.addEventListener('click', (e) => e.preventDefault());
+  seed.addEventListener('click',e=>e.preventDefault());
+  waterCan.addEventListener('click',e=>e.preventDefault());
 </script>
 </body>
 </html>
