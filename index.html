@@ -2,16 +2,26 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<!-- 微信核心适配：禁止缩放、设置视口、开启硬件加速 -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<!-- 微信禁止识别手机号/邮箱，减少触摸干扰 -->
+<meta name="format-detection" content="telephone=no, email=no"/>
 <title>植树节互动种树</title>
 <style>
   * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    /* 微信端禁止文本选择、长按菜单 */
     user-select: none;
     -webkit-user-select: none;
-    touch-action: manipulation;
+    -webkit-touch-callout: none;
+    /* 禁用所有触摸行为，仅保留手动处理 */
+    touch-action: none;
+    /* 硬件加速，解决微信动画卡顿 */
+    -webkit-transform: translateZ(0);
+    transform: translateZ(0);
   }
   body {
     background: linear-gradient(120deg, #87CEEB, #98FB98);
@@ -19,28 +29,35 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    font-family: Microsoft YaHei, sans-serif;
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    /* 微信端禁止滚动 */
+    overflow: hidden;
+    touch-action: none;
   }
   .scene {
-    width: 500px;
-    height: 500px;
+    width: 100vw;
+    max-width: 500px;
+    height: 100vw;
+    max-height: 500px;
     background: rgba(255,255,255,0.25);
     border-radius: 12px;
     position: relative;
     overflow: hidden;
+    /* 微信端触摸区域优化 */
+    -webkit-tap-highlight-color: transparent;
   }
   .ground {
     position: absolute;
     bottom: 0;
     width: 100%;
-    height: 120px;
+    height: 24%;
     background: #8B4513;
     border-top: 3px solid #5C3317;
   }
 
   .seed-pit {
     position: absolute;
-    bottom: 110px;
+    bottom: 22%;
     left: 50%;
     transform: translateX(-50%);
     width: 34px;
@@ -58,7 +75,7 @@
 
   .water-pit {
     position: absolute;
-    bottom: 200px;
+    bottom: 40%;
     left: calc(50% + 20px);
     transform: translateX(-50%);
     width: 40px;
@@ -76,7 +93,7 @@
 
   .pit-mark {
     position: absolute;
-    bottom: 112px;
+    bottom: 22.4%;
     left: 50%;
     transform: translateX(-50%);
     width: 26px;
@@ -87,19 +104,23 @@
     transition: opacity 0.5s ease;
   }
 
+  /* 种子：微信端触摸优化 */
   .seed {
     width: 18px;
     height: 14px;
     background: #3E2723;
     border-radius: 50% 50% 35% 35%;
     position: absolute;
-    top: 120px;
-    left: 100px;
+    top: 24%;
+    left: 20%;
     cursor: grab;
     z-index: 99;
     pointer-events: auto;
-    transition: all 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    /* 微信端丝滑拖动 */
+    transition: all 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: left, top;
+    /* 禁止微信长按弹出菜单 */
+    -webkit-touch-callout: none;
   }
   .seed.planted {
     opacity: 0 !important;
@@ -107,27 +128,30 @@
     transition: all 0.5s ease-out;
   }
 
+  /* 水杯：微信端触摸+动画优化 */
   .water-can {
     width: 38px;
     height: 52px;
     position: absolute;
-    top: 60px;
-    right: 60px;
+    top: 12%;
+    right: 20%;
     cursor: grab;
     z-index: 99;
     pointer-events: auto;
     transform-origin: bottom left;
+    /* 淡化+位置过渡 */
     transition: opacity 1.5s ease-out, transform 0.3s ease, left 0.3s ease, top 0.3s ease;
     will-change: transform, left, top, opacity;
+    -webkit-touch-callout: none;
   }
   .water-can.tilt {
     transform: rotate(-30deg);
     left: calc(50% + 20px) !important;
-    top: 280px !important;
+    top: calc(100% - 220px) !important;
   }
   .water-can.stay {
     left: calc(50% + 20px) !important;
-    top: 280px !important;
+    top: calc(100% - 220px) !important;
     transform: rotate(0deg);
   }
   .water-can.fade-out {
@@ -154,7 +178,7 @@
 
   .drop-zone {
     position: absolute;
-    bottom: 110px;
+    bottom: 22%;
     left: calc(50% + 10px);
     transform: translateX(-50%);
     width: 60px;
@@ -186,7 +210,7 @@
 
   .tree-box {
     position: absolute;
-    bottom: 115px;
+    bottom: 23%;
     left: 50%;
     transform: translateX(-50%);
     width: 200px;
@@ -300,7 +324,7 @@
 
   .tip {
     position: absolute;
-    top: 24px;
+    top: 5%;
     left: 50%;
     transform: translateX(-50%);
     font-size: 19px;
@@ -310,6 +334,8 @@
     transition: opacity 0.6s;
     white-space: nowrap;
     z-index: 99;
+    text-align: center;
+    padding: 0 10px;
   }
   .tip.on { opacity: 1; }
 </style>
@@ -351,6 +377,13 @@
 </div>
 
 <script>
+  // 微信端触摸事件兼容：修复e.touches获取不到的问题
+  document.addEventListener('touchstart', function(e) {}, { passive: false });
+  document.addEventListener('touchmove', function(e) {
+    // 阻止微信默认的滚动/缩放行为
+    e.preventDefault();
+  }, { passive: false });
+
   const seed = document.getElementById('seed');
   const waterCan = document.getElementById('waterCan');
   const seedPit = document.getElementById('seedPit');
@@ -367,12 +400,17 @@
   let isDraggingCan = false;
   let isWatering = false;
 
-  // 统一支持鼠标+触摸
+  // 微信端专用拖动函数：兼容touch事件+阻止默认行为
   function startDrag(elem, isSeed, e) {
-    e.preventDefault();
+    // 强制阻止微信默认行为（核心修复）
+    if (e.preventDefault) e.preventDefault();
+    else e.returnValue = false;
+
+    // 状态校验
     if (isSeed && seedPlanted) return;
     if (!isSeed && (!seedPlanted || level >=3 || isWatering)) return;
 
+    // 标记拖动状态
     if (isSeed) {
       isDraggingSeed = true;
       if (!seedPitShowed) {
@@ -385,42 +423,65 @@
     }
     elem.style.cursor = 'grabbing';
 
-    const move = (evt) => {
-      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
-      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
-      const sceneRect = document.querySelector('.scene').getBoundingClientRect();
-      const x = Math.max(sceneRect.left + 10, Math.min(clientX - elem.offsetWidth/2, sceneRect.right - 10));
-      const y = Math.max(sceneRect.top + 10, Math.min(clientY - elem.offsetHeight/2, sceneRect.bottom - 130));
-      elem.style.left = x - sceneRect.left + 'px';
-      elem.style.top = y - sceneRect.top + 'px';
+    // 获取初始触摸点
+    let clientX = e.clientX || (e.touches && e.touches[0].clientX) || 0;
+    let clientY = e.clientY || (e.touches && e.touches[0].clientY) || 0;
+    const sceneRect = document.querySelector('.scene').getBoundingClientRect();
+
+    // 触摸移动处理（微信端高频触发优化）
+    const moveHandler = (evt) => {
+      if (!isDraggingSeed && !isDraggingCan) return;
+      
+      // 兼容鼠标/触摸
+      let moveX = evt.clientX || (evt.touches && evt.touches[0].clientX) || clientX;
+      let moveY = evt.clientY || (evt.touches && evt.touches[0].clientY) || clientY;
+      
+      // 计算位置（相对scene）
+      const x = Math.max(sceneRect.left + 10, Math.min(moveX - elem.offsetWidth/2, sceneRect.right - 10));
+      const y = Math.max(sceneRect.top + 10, Math.min(moveY - elem.offsetHeight/2, sceneRect.bottom - 10));
+      
+      // 直接赋值，避免过渡延迟（微信端更丝滑）
+      elem.style.left = (x - sceneRect.left) + 'px';
+      elem.style.top = (y - sceneRect.top) + 'px';
     };
 
-    const end = () => {
+    // 触摸结束处理
+    const endHandler = () => {
+      // 重置状态
       if (isSeed) isDraggingSeed = false;
       else {
         isDraggingCan = false;
         waterPit.classList.remove('show');
       }
       elem.style.cursor = 'grab';
-      document.removeEventListener('mousemove', move);
-      document.removeEventListener('mouseup', end);
-      document.removeEventListener('touchmove', move);
-      document.removeEventListener('touchend', end);
+
+      // 移除事件监听（防止内存泄漏）
+      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mouseup', endHandler);
+      document.removeEventListener('touchmove', moveHandler);
+      document.removeEventListener('touchend', endHandler);
+      document.removeEventListener('touchcancel', endHandler);
+
+      // 检查是否拖到目标位置
       checkDropAction(isSeed);
     };
 
-    document.addEventListener('mousemove', move);
-    document.addEventListener('mouseup', end);
-    document.addEventListener('touchmove', move, { passive: false });
-    document.addEventListener('touchend', end);
+    // 绑定事件（微信端必须加passive: false）
+    document.addEventListener('mousemove', moveHandler);
+    document.addEventListener('mouseup', endHandler);
+    document.addEventListener('touchmove', moveHandler, { passive: false });
+    document.addEventListener('touchend', endHandler);
+    document.addEventListener('touchcancel', endHandler); // 处理微信触摸中断（比如来电）
   }
 
+  // 检查拖动结果
   function checkDropAction(isSeed) {
     if (isSeed) {
       if (!seedPlanted) {
         const seedRect = seed.getBoundingClientRect();
         const pitRect = seedPit.getBoundingClientRect();
-        const inPit = Math.abs(seedRect.left - pitRect.left) < 25 && Math.abs(seedRect.top - pitRect.top) < 25;
+        // 微信端扩大检测范围，提高容错
+        const inPit = Math.abs(seedRect.left - pitRect.left) < 30 && Math.abs(seedRect.top - pitRect.top) < 30;
         if (inPit) {
           seed.classList.add('planted');
           seedPit.classList.remove('show');
@@ -435,7 +496,7 @@
       if (seedPlanted && level <3 && !isWatering) {
         const canRect = waterCan.getBoundingClientRect();
         const wpRect = waterPit.getBoundingClientRect();
-        const inWater = Math.abs(canRect.left - wpRect.left) < 35 && Math.abs(canRect.top - wpRect.top) < 35;
+        const inWater = Math.abs(canRect.left - wpRect.left) < 40 && Math.abs(canRect.top - wpRect.top) < 40;
         if (inWater) {
           isWatering = true;
           doWater();
@@ -444,23 +505,32 @@
     }
   }
 
+  // 浇水动画逻辑
   function doWater() {
     waterCan.classList.add('tilt');
     waterCan.classList.remove('stay','fade-out');
+    
+    // 水滴动画
     waterDrops.forEach((d,i)=>{
       setTimeout(()=>{
-        d.classList.remove('water-animate'); void d.offsetWidth;
+        d.classList.remove('water-animate'); 
+        void d.offsetWidth; // 重置动画
         d.classList.add('water-animate');
       },i*80);
     });
+
+    // 树木成长
     setTimeout(()=>{
       level++;
       growTree(level);
       showTip(level>3?3:level);
+
+      // 浇水完成处理
       setTimeout(()=>{
         waterCan.classList.remove('tilt');
-        if(level<3) waterCan.classList.add('stay');
-        else {
+        if(level<3) {
+          waterCan.classList.add('stay');
+        } else {
           waterCan.classList.add('fade-out');
           waterPit.classList.remove('show');
         }
@@ -469,24 +539,43 @@
     },500);
   }
 
+  // 树木成长控制
   function growTree(lv) {
     stages.forEach(s=>s.classList.remove('show'));
     if(lv>=1&&lv<=3) stages[lv-1].classList.add('show');
   }
 
+  // 提示文字切换
   function showTip(step) {
     tips.forEach(t=>t.classList.remove('on'));
     if(step<=3) tips[step].classList.add('on');
   }
 
-  // 绑定鼠标+触摸事件
-  seed.addEventListener('mousedown',(e)=>startDrag(seed,true,e));
-  seed.addEventListener('touchstart',(e)=>startDrag(seed,true,e),{passive:false});
-  waterCan.addEventListener('mousedown',(e)=>startDrag(waterCan,false,e));
-  waterCan.addEventListener('touchstart',(e)=>startDrag(waterCan,false,e),{passive:false});
+  // ========== 微信端核心绑定：touchstart + mousedown ==========
+  // 种子事件绑定
+  seed.addEventListener('mousedown', function(e) {
+    startDrag(seed, true, e);
+  });
+  seed.addEventListener('touchstart', function(e) {
+    startDrag(seed, true, e);
+  }, { passive: false });
 
-  seed.addEventListener('click',e=>e.preventDefault());
-  waterCan.addEventListener('click',e=>e.preventDefault());
+  // 水杯事件绑定
+  waterCan.addEventListener('mousedown', function(e) {
+    startDrag(waterCan, false, e);
+  });
+  waterCan.addEventListener('touchstart', function(e) {
+    startDrag(waterCan, false, e);
+  }, { passive: false });
+
+  // 禁止点击默认行为
+  seed.addEventListener('click', e=>e.preventDefault());
+  waterCan.addEventListener('click', e=>e.preventDefault());
+
+  // 微信端额外修复：防止页面被拉取
+  document.body.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, { passive: false });
 </script>
 </body>
 </html>
